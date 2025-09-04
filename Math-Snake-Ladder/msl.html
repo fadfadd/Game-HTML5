@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Math Snake Ladder</title>
+    <style>
+      :root {
+        font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        gap: 1rem;
+        background: linear-gradient(135deg, #edf2fb, #e3f2fd);
+        transition: background 0.6s, color 0.6s;
+      }
+      body.dark {
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        color: #f1f5f9;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 2rem;
+        position: relative;
+      }
+      #music-toggle,
+      #theme-toggle {
+        position: absolute;
+        top: 0;
+        cursor: pointer;
+        font-size: 1.2rem;
+        background: #fff;
+        border-radius: 50%;
+        padding: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      #music-toggle {
+        right: -50px;
+      }
+      #theme-toggle {
+        right: -90px;
+      }
+
+      #game-container {
+        position: relative;
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #board-wrap {
+        position: relative;
+      }
+      #overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      td {
+        width: 45px;
+        height: 45px;
+        border: 1px solid #777;
+        text-align: center;
+        vertical-align: middle;
+        position: relative;
+        background: #fff;
+      }
+      body.dark td {
+        background: #1e293b;
+        border-color: #475569;
+        color: #f1f5f9;
+      }
+      tr:nth-child(even) td {
+        background: #f0f0ff;
+      }
+      body.dark tr:nth-child(even) td {
+        background: #334155;
+      }
+
+      .token {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .p1 {
+        background: #ff5252;
+        transition: all 0.4s ease-in-out;
+      }
+      .p2 {
+        background: #448aff;
+        transition: all 0.4s ease-in-out;
+      }
+
+      #controls,
+      #question-area {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      button {
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      button:hover:not(:disabled) {
+        filter: brightness(1.1);
+      }
+      input[type="number"] {
+        width: 4rem;
+        padding: 0.4rem;
+        border-radius: 0.5rem;
+        border: 1px solid #ccc;
+        text-align: center;
+      }
+      #log {
+        max-height: 220px;
+        overflow: auto;
+        background: #fafafa;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        width: 260px;
+        font-size: 0.9rem;
+      }
+      body.dark #log {
+        background: #0f172a;
+        border-color: #334155;
+      }
+
+      #dice {
+        width: 60px;
+        height: 60px;
+        background: #fff;
+        border: 2px solid #333;
+        border-radius: 10px;
+        position: relative;
+        margin-top: 0.5rem;
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        background: #333;
+        border-radius: 50%;
+        position: absolute;
+      }
+
+      /* START SCREEN */
+      #start-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #7dd3fc, #a78bfa, #f9a8d4);
+        background-size: 300% 300%;
+        animation: gradientShift 10s ease infinite;
+      }
+      @keyframes gradientShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+      .start-card {
+        width: min(92vw, 680px);
+        background: rgba(255, 255, 255, 0.9);
+        border: 3px solid #fff;
+        border-radius: 24px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+        padding: 2.5rem;
+        text-align: center;
+        backdrop-filter: blur(8px);
+      }
+      .title {
+        font-size: 2.5rem;
+        margin: 1rem 0;
+        font-weight: 800;
+        background: linear-gradient(to right, #ef4444, #f59e0b, #22c55e, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .subtitle {
+        opacity: 0.9;
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+        color: #444;
+      }
+      .start-btn {
+        margin-top: 1rem;
+        padding: 1rem 2rem;
+        border-radius: 20px;
+        font-weight: 900;
+        font-size: 1.2rem;
+        cursor: pointer;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(34, 197, 94, 0.4);
+        transition: all 0.25s ease;
+      }
+      .start-btn:hover {
+        transform: scale(1.07);
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        box-shadow: 0 10px 20px rgba(22, 163, 74, 0.5);
+      }
+      .emoji-big {
+        font-size: 3.5rem;
+        animation: bounce 1.6s infinite;
+      }
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+      /* HOW TO PLAY POPUP */
+      #howto-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.5);
+      }
+      #howto-screen.hidden {
+        display: none;
+      }
+      #howto-screen .start-card {
+        max-width: 600px;
+      }
+      #howto-screen ul {
+        text-align: left;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- START SCREEN -->
+    <div id="start-screen">
+      <div class="start-card">
+        <div class="emoji-big">🐍🪜</div>
+        <div class="title">Math Snake Ladder</div>
+        <div class="subtitle">
+          Lempar dadu untuk mulai, jawab soal matematika untuk melangkah.<br />
+          Hati-hati ular! Cari tangga untuk naik lebih cepat 🎲➕
+        </div>
+        <button id="start-btn" class="start-btn">🚀 Mulai Permainan</button>
+        <button id="howto-btn" class="start-btn" style="background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 8px 18px rgba(37, 99, 235, 0.4)">📖 Cara Bermain</button>
+      </div>
+    </div>
+
+    <!-- HOW TO PLAY SCREEN -->
+    <div id="howto-screen" class="hidden">
+      <div class="start-card">
+        <h2>📖 Cara Bermain</h2>
+        <ul>
+          <li>Lempar dadu di awal. Pemain hanya bisa mulai jika dapat angka <b>1</b>.</li>
+          <li>Setiap giliran setelahnya ditentukan oleh <b>jawaban soal matematika</b>.</li>
+          <li>Jawaban benar → maju sesuai hasil. Jawaban salah → tetap di tempat.</li>
+          <li>Jika berhenti di <b>kepala ular</b>, otomatis turun ke ekor ular.</li>
+          <li>Jika berhenti di <b>bawah tangga</b>, otomatis naik ke atas tangga.</li>
+          <li>Pemain pertama yang mencapai kotak <b>100</b> menang 🎉.</li>
+        </ul>
+        <button id="close-howto" class="start-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 8px 18px rgba(239, 68, 68, 0.4)">⬅️ Kembali</button>
+      </div>
+    </div>
+
+    <!-- MAIN GAME -->
+    <h1>
+      Math Snake Ladder 🎲➕🟥
+      <button id="music-toggle">🔊</button>
+      <button id="theme-toggle">🌙</button>
+    </h1>
+
+    <div id="game-container">
+      <div id="board-wrap">
+        <svg id="overlay"></svg>
+        <table id="board"></table>
+      </div>
+      <div id="sidebar">
+        <div id="controls">
+          <h3>Mekanisme Giliran</h3>
+          <button id="roll-btn">Roll untuk dapat 1 🎲</button>
+          <div id="dice"></div>
+          <div id="question-area" class="hidden">
+            <span id="question"></span>
+            <input type="number" id="answer" placeholder="?" />
+            <button id="submit-answer">Jawab</button>
+          </div>
+          <p><strong>Giliran:</strong> <span id="turn">Pemain 1</span></p>
+        </div>
+        <div>
+          <h3>Log</h3>
+          <div id="log"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const boardSize = 100;
+      const snakes = { 16: 6, 48: 30, 64: 60, 79: 19, 93: 68, 95: 24, 97: 76, 98: 78 };
+      const ladders = { 3: 25, 6: 18, 11: 49, 20: 38, 28: 84, 33: 52, 40: 59, 63: 81, 71: 92 };
+      const players = [
+        { pos: 0, name: "Pemain 1" },
+        { pos: 0, name: "Pemain 2" },
+      ];
+      let current = 0,
+        started = [false, false],
+        currentQuestion = null;
+
+      // Audio
+      const soundSnake = new Audio("https://actions.google.com/sounds/v1/animals/snake_rattle.ogg");
+      const soundLadder = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+      const soundMove = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+      const soundDice = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+      const music = new Audio("https://www.bensound.com/bensound-music/bensound-funday.mp3");
+      music.loop = true;
+      music.volume = 0.3;
+
+      // DOM
+      const startScreen = document.getElementById("start-screen");
+      const startBtn = document.getElementById("start-btn");
+      const howtoBtn = document.getElementById("howto-btn");
+      const howtoScreen = document.getElementById("howto-screen");
+      const closeHowto = document.getElementById("close-howto");
+      const boardWrap = document.getElementById("board-wrap");
+      const overlaySvg = document.getElementById("overlay");
+      const boardEl = document.getElementById("board");
+      const rollBtn = document.getElementById("roll-btn");
+      const diceEl = document.getElementById("dice");
+      const questionArea = document.getElementById("question-area");
+      const questionSpan = document.getElementById("question");
+      const answerInput = document.getElementById("answer");
+      const submitBtn = document.getElementById("submit-answer");
+      const turnSpan = document.getElementById("turn");
+      const logEl = document.getElementById("log");
+      const musicToggle = document.getElementById("music-toggle");
+      const themeToggle = document.getElementById("theme-toggle");
+
+      const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+      const log = (m) => {
+        logEl.innerHTML += `<div>${m}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+      };
+
+      function renderDice(n) {
+        const dots = {
+          1: [[50, 50]],
+          2: [
+            [25, 25],
+            [75, 75],
+          ],
+          3: [
+            [25, 25],
+            [50, 50],
+            [75, 75],
+          ],
+          4: [
+            [25, 25],
+            [75, 25],
+            [25, 75],
+            [75, 75],
+          ],
+          5: [
+            [25, 25],
+            [75, 25],
+            [50, 50],
+            [25, 75],
+            [75, 75],
+          ],
+          6: [
+            [25, 25],
+            [75, 25],
+            [25, 50],
+            [75, 50],
+            [25, 75],
+            [75, 75],
+          ],
+        };
+        diceEl.innerHTML = "";
+        dots[n].forEach(([x, y]) => {
+          const d = document.createElement("span");
+          d.className = "dot";
+          d.style.left = `${x}%`;
+          d.style.top = `${y}%`;
+          diceEl.appendChild(d);
+        });
+      }
+
+      function generateQuestion() {
+        const ops = ["+", "-", "*", "/"];
+        let a, b, op, res;
+        while (true) {
+          op = ops[rand(0, ops.length - 1)];
+          if (op === "*") {
+            a = rand(1, 5);
+            b = rand(1, 5);
+            res = a * b;
+          } else if (op === "+") {
+            a = rand(1, 9);
+            b = rand(1, 9);
+            res = a + b;
+          } else if (op === "-") {
+            a = rand(2, 9);
+            b = rand(1, a - 1);
+            res = a - b;
+          } else {
+            b = rand(1, 9);
+            res = rand(1, 9);
+            a = res * b;
+          }
+          if (res >= 1 && res <= 9) break;
+        }
+        return { text: `${a} ${op} ${b} = ?`, answer: res };
+      }
+
+      function createBoard() {
+        for (let r = 10; r >= 1; r--) {
+          const row = document.createElement("tr");
+          const rtl = r % 2 === 0;
+          for (let c = 1; c <= 10; c++) {
+            const num = (r - 1) * 10 + (rtl ? 11 - c : c);
+            const td = document.createElement("td");
+            td.id = `cell-${num}`;
+            td.textContent = num;
+            row.appendChild(td);
+          }
+          boardEl.appendChild(row);
+        }
+      }
+      function clearTokens() {
+        document.querySelectorAll(".token").forEach((t) => t.remove());
+      }
+      function placeTokens() {
+        clearTokens();
+        players.forEach((p, i) => {
+          if (!p.pos) return;
+          const cell = document.getElementById(`cell-${p.pos}`);
+          if (cell) {
+            const d = document.createElement("div");
+            d.className = `token ${i === 0 ? "p1" : "p2"}`;
+            cell.appendChild(d);
+          }
+        });
+      }
+      function setOverlaySize() {
+        overlaySvg.setAttribute("width", boardEl.offsetWidth);
+        overlaySvg.setAttribute("height", boardEl.offsetHeight);
+      }
+      function cellCenter(num) {
+        const cell = document.getElementById(`cell-${num}`);
+        const brd = boardWrap.getBoundingClientRect();
+        const rc = cell.getBoundingClientRect();
+        return { x: rc.left - brd.left + rc.width / 2, y: rc.top - brd.top + rc.height / 2 };
+      }
+      function drawOverlay() {
+        overlaySvg.innerHTML = "";
+        Object.entries(ladders).forEach(([from, to]) => {
+          from = +from;
+          to = +to;
+          if (to <= from) return;
+          const a = cellCenter(from),
+            b = cellCenter(to);
+          const ladder = document.createElementNS("http://www.w3.org/2000/svg", "image");
+          ladder.setAttribute("href", "https://i.imgur.com/od1iJrM.png");
+          ladder.setAttribute("x", Math.min(a.x, b.x) - 25);
+          ladder.setAttribute("y", Math.min(a.y, b.y) - 25);
+          ladder.setAttribute("width", Math.abs(b.x - a.x) + 50);
+          ladder.setAttribute("height", Math.abs(b.y - a.y) + 50);
+          overlaySvg.appendChild(ladder);
+        });
+        Object.entries(snakes).forEach(([head, tail]) => {
+          head = +head;
+          tail = +tail;
+          const a = cellCenter(head),
+            b = cellCenter(tail);
+          const snake = document.createElementNS("http://www.w3.org/2000/svg", "image");
+          snake.setAttribute("href", "https://i.imgur.com/9L4PjIj.png");
+          snake.setAttribute("x", Math.min(a.x, b.x) - 30);
+          snake.setAttribute("y", Math.min(a.y, b.y) - 30);
+          snake.setAttribute("width", Math.abs(b.x - a.x) + 60);
+          snake.setAttribute("height", Math.abs(b.y - a.y) + 60);
+          overlaySvg.appendChild(snake);
+        });
+      }
+
+      function animateMove(playerIdx, targetPos) {
+        return new Promise((resolve) => {
+          let start = players[playerIdx].pos;
+          if (start === targetPos) {
+            resolve();
+            return;
+          }
+          let step = start < targetPos ? 1 : -1;
+          const interval = setInterval(() => {
+            players[playerIdx].pos += step;
+            placeTokens();
+            soundMove.currentTime = 0;
+            soundMove.play();
+            if (players[playerIdx].pos === targetPos) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 250);
+        });
+      }
+
+      function startQuestion() {
+        currentQuestion = generateQuestion();
+        questionSpan.textContent = currentQuestion.text;
+        questionArea.classList.remove("hidden");
+        answerInput.value = "";
+        answerInput.focus();
+      }
+      function endQuestion() {
+        currentQuestion = null;
+        questionArea.classList.add("hidden");
+      }
+
+      async function applySpecial(idx) {
+        let pos = players[idx].pos;
+        if (snakes[pos]) {
+          log(`${players[idx].name} kena ular!`);
+          soundSnake.currentTime = 0;
+          soundSnake.play();
+          await animateMove(idx, snakes[pos]);
+        } else if (ladders[pos]) {
+          log(`${players[idx].name} naik tangga!`);
+          soundLadder.currentTime = 0;
+          soundLadder.play();
+          await animateMove(idx, ladders[pos]);
+        }
+      }
+      function checkWin(idx) {
+        if (players[idx].pos >= boardSize) {
+          alert(`${players[idx].name} MENANG!`);
+          location.reload();
+        }
+      }
+
+      // ⬇️ UI state fixer: panggil ini setiap ganti giliran
+      function updateUI() {
+        turnSpan.textContent = players[current].name;
+        const hasStarted = started[current];
+
+        if (hasStarted) {
+          // pemain sudah mulai → sembunyikan tombol roll, tampilkan soal
+          rollBtn.style.display = "none";
+          rollBtn.disabled = true;
+          if (!currentQuestion) startQuestion();
+        } else {
+          // pemain belum mulai → tampilkan roll, sembunyikan soal
+          endQuestion();
+          rollBtn.style.display = "";
+          rollBtn.disabled = false;
+        }
+      }
+
+      // EVENTS
+      rollBtn.addEventListener("click", () => {
+        // guard: cegah roll untuk pemain yang sudah mulai
+        if (started[current]) return;
+
+        const n = rand(1, 6);
+        renderDice(n);
+        soundDice.currentTime = 0;
+        soundDice.play();
+
+        if (n === 1) {
+          started[current] = true;
+          log(`${players[current].name} boleh mulai!`);
+          updateUI(); // akan otomatis munculkan soal & sembunyikan tombol roll
+        } else {
+          log(`${players[current].name} belum dapat 1.`);
+          current = (current + 1) % players.length;
+          updateUI();
+        }
+      });
+
+      submitBtn.addEventListener("click", async () => {
+        if (!currentQuestion) return;
+        const val = parseInt(answerInput.value);
+        if (val === currentQuestion.answer) {
+          log(`${players[current].name} benar (${val}).`);
+          await animateMove(current, Math.min(boardSize, players[current].pos + val));
+          await applySpecial(current);
+          checkWin(current);
+        } else {
+          log(`${players[current].name} salah (${isNaN(val) ? "∅" : val}).`);
+        }
+        endQuestion();
+        current = (current + 1) % players.length; // pindah giliran
+        updateUI(); // tampilkan roll atau soal sesuai status pemain baru
+      });
+
+      musicToggle.addEventListener("click", () => {
+        if (music.paused) {
+          music.play();
+          musicToggle.textContent = "🔈";
+        } else {
+          music.pause();
+          musicToggle.textContent = "🔊";
+        }
+      });
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        themeToggle.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      });
+      startBtn.addEventListener("click", () => {
+        startScreen.style.display = "none";
+        music.play();
+        updateUI();
+      });
+      howtoBtn.addEventListener("click", () => {
+        howtoScreen.classList.remove("hidden");
+      });
+      closeHowto.addEventListener("click", () => {
+        howtoScreen.classList.add("hidden");
+      });
+
+      // INIT
+      createBoard();
+      placeTokens();
+      renderDice(1);
+      setOverlaySize();
+      drawOverlay();
+      window.addEventListener("resize", () => {
+        setOverlaySize();
+        drawOverlay();
+      });
+
+      // set UI awal (Pemain 1 belum mulai → tombol roll tampil)
+      updateUI();
+    </script>
+  </body>
+</html>
